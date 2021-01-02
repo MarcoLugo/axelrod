@@ -1,43 +1,41 @@
-use std::collections::HashMap;
+use std::convert::TryFrom;
 
-use crate::{
-    player::{Choice, Player}
-};
+use crate::player::{Choice, Player};
 
 use contracts::*;
+use fnv::FnvHashMap;
+use indicatif::{ProgressBar, ProgressIterator, ProgressStyle};
 use itertools::Itertools;
 
-pub type StrategySignature = Box<dyn Fn() -> Choice>;
+pub type StrategySignature = Box<dyn Fn(&[Choice], &[Choice]) -> Choice>;
 
 pub struct Tournament {
-    n_iterations: usize,
+    n_iterations: u64,
     pub players: Vec<Player>,
     pub pairings: Vec<(usize, usize)>,
-    history: HashMap<(usize, usize), (Vec<Choice>, Vec<Choice>)>,
+    history: FnvHashMap<(usize, usize), (Vec<Choice>, Vec<Choice>)>,
     scores: Vec<i32>,
 }
 
 impl Tournament {
     #[requires(configs.len() % 2 == 0)]
     #[requires(n_iterations > 0)]
-    pub fn new(configs: Vec<(String, StrategySignature)>, n_iterations: usize) -> Self {
+    pub fn new(configs: Vec<(String, StrategySignature)>, n_iterations: u64) -> Self {
         let n_players = configs.len();
 
         let mut tournament = Self {
             n_iterations,
-            players: configs
-                .into_iter()
-                .enumerate()
-                .map(|(i, c)| Player::new(i, c.1, c.0))
-                .collect(),
+            players: configs.into_iter().map(|c| Player::new(c.1, c.0)).collect(),
             pairings: (0..n_players)
                 .combinations_with_replacement(2)
                 .map(|x| (x[0], x[1]))
                 .collect(),
-            history: HashMap::new(),
+            history: FnvHashMap::default(),
             scores: vec![0; n_players],
         };
 
+        let n_iterations =
+            usize::try_from(n_iterations).expect("n_iterations could not be converted to usize.");
         for history_pairing in &tournament.pairings {
             tournament.history.insert(
                 *history_pairing,
@@ -64,27 +62,34 @@ impl Tournament {
         for pairing in &self.pairings {
             let player_a = &self.players[pairing.0];
             let player_b = &self.players[pairing.1];
+            let history = self.history.get(pairing).unwrap();
 
-            let choice_a = player_a.choose();
-            let choice_b = player_b.choose();
+            let choice_a = player_a.choose(&history.0, &history.1);
+            let choice_b = player_b.choose(&history.1, &history.0);
 
-            match self.history.get_mut(pairing) {
-                Some(h) => {
-                    h.0.push(choice_a);
-                    h.1.push(choice_b);
-                }
-                None => unreachable!(),
-            };
+            // store results
+            let h = self.history.get_mut(pairing).unwrap();
+            h.0.push(choice_a);
+            h.1.push(choice_b);
         }
     }
 
-    pub fn run(&mut self, verbose: bool) {
-        for _ in 0..self.n_iterations {
+    pub fn run(&mut self) {
+        println!("[+] Running tournament...");
+        let pb = ProgressBar::new(self.n_iterations as u64);
+        pb.set_draw_delta(self.n_iterations as u64 / 200);
+        pb.set_style(ProgressStyle::default_bar().template(
+            "{spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}] ({pos}/{len}, ETA {eta})",
+        ));
+
+        for _ in (0..self.n_iterations).progress_with(pb) {
             self.run_iteration();
         }
     }
 
     pub fn show_scores(&mut self) {
+        println!("[+] Match scores:");
+
         for pairing in &self.pairings {
             let (choices_a, choices_b) = self.history.get(pairing).unwrap();
 
@@ -100,10 +105,18 @@ impl Tournament {
             self.scores[pairing.0] += score_a;
             self.scores[pairing.1] += score_b;
 
-            println!("Match: {:?} -> ({}, {})", pairing, score_a, score_b);
+            println!(
+                "Match: {} ({}) vs {} ({}) -> ({}, {})",
+                pairing.0,
+                self.players[pairing.0].name,
+                pairing.1,
+                self.players[pairing.1].name,
+                score_a,
+                score_b
+            );
         }
 
-        println!("Total scores:");
+        println!("[+] Total scores:");
 
         for (i, score) in self.scores.iter().enumerate() {
             println!("{} ({}): {} points.", i, self.players[i].name, score);

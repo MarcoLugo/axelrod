@@ -7,21 +7,16 @@ pub enum Choice {
 }
 
 pub struct Player {
-    id: usize,
     strategy: StrategySignature,
     pub name: String,
 }
 
 impl Player {
-    pub fn new(id: usize, strategy: StrategySignature, name: String) -> Self {
-        Self {
-            id,
-            strategy,
-            name,
-        }
+    pub fn new(strategy: StrategySignature, name: String) -> Self {
+        Self { strategy, name }
     }
 
-    pub fn choose(&self) -> Choice {
-        (self.strategy)()
+    pub fn choose(&self, my_choices: &[Choice], other_choices: &[Choice]) -> Choice {
+        (self.strategy)(my_choices, other_choices)
     }
 }
