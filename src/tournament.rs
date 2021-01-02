@@ -26,8 +26,7 @@ impl Tournament {
             n_iterations,
             players: configs
                 .into_iter()
-                .enumerate()
-                .map(|(i, c)| Player::new(c.1, c.0, i))
+                .map(|c| Player::new(c.1, c.0, create_seed_from_str(c.0)))
                 .collect(),
             pairings: (0..n_players)
                 .combinations_with_replacement(2)
@@ -128,4 +127,8 @@ impl Tournament {
                 (acc_a + result_a, acc_b + result_b)
             })
     }
+}
+
+fn create_seed_from_str(s: &str) -> u64 {
+    s.as_bytes().iter().fold(0, |acc, &x| acc + x as u64)
 }

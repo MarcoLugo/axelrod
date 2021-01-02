@@ -1,6 +1,5 @@
 use crate::tournament::StrategySignature;
 use fastrand::Rng;
-use std::convert::TryFrom;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Choice {
@@ -15,11 +14,11 @@ pub struct Player {
 }
 
 impl Player {
-    pub fn new(strategy: StrategySignature, name: &'static str, seed: usize) -> Self {
+    pub fn new(strategy: StrategySignature, name: &'static str, seed: u64) -> Self {
         Self {
             strategy,
             name,
-            rng: Rng::with_seed(u64::try_from(seed).expect("Seed could not be converted to u64.")),
+            rng: Rng::with_seed(seed),
         }
     }
 
