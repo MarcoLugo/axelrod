@@ -1,45 +1,35 @@
 use crate::player::Choice;
+use fastrand::Rng;
 
-pub fn cooperator(_: &[Choice], _: &[Choice]) -> Choice {
+pub fn cooperator(_: &[Choice], _: &[Choice], _: &mut Rng) -> Choice {
     Choice::Cooperate
 }
 
-pub fn defector(_: &[Choice], _: &[Choice]) -> Choice {
+pub fn defector(_: &[Choice], _: &[Choice], _: &mut Rng) -> Choice {
     Choice::Defect
 }
 
-pub fn alternator_cooperator(my_choices: &[Choice], _: &[Choice]) -> Choice {
-    match my_choices.last() {
-        Some(Choice::Cooperate) => Choice::Defect,
-        Some(Choice::Defect) => Choice::Cooperate,
-        None => Choice::Cooperate,
-    }
-}
-
-pub fn alternator_defector(my_choices: &[Choice], _: &[Choice]) -> Choice {
-    match my_choices.last() {
-        Some(Choice::Cooperate) => Choice::Defect,
-        Some(Choice::Defect) => Choice::Cooperate,
-        None => Choice::Defect,
-    }
-}
-
-pub fn tit_for_tat(_: &[Choice], other_choices: &[Choice]) -> Choice {
-    match other_choices.last() {
-        Some(Choice::Defect) => Choice::Defect,
-        _ => Choice::Cooperate,
-    }
-}
-
-pub fn random_coin_flip(my_choices: &[Choice], _: &[Choice]) -> Choice {
-    // TODO: make this strategy independent from other strategies using RNG.
-    if my_choices.is_empty() {
-        fastrand::seed(404);
-    }
-
-    if fastrand::bool() {
+pub fn random_coin_flip(_: &[Choice], _: &[Choice], rng: &mut Rng) -> Choice {
+    if rng.bool() {
         Choice::Cooperate
     } else {
         Choice::Defect
+    }
+}
+
+// Rapoport [1984]
+pub fn tit_for_tat(_: &[Choice], other_choices: &[Choice], _: &mut Rng) -> Choice {
+    match other_choices.last() {
+        None => Choice::Cooperate,
+        Some(&c) => c,
+    }
+}
+
+// Friedman [1984]
+pub fn grim_trigger(_: &[Choice], other_choices: &[Choice], _: &mut Rng) -> Choice {
+    if other_choices.iter().any(|&c| c == Choice::Defect) {
+        Choice::Defect
+    } else {
+        Choice::Cooperate
     }
 }
