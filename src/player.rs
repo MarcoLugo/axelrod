@@ -8,11 +8,11 @@ pub enum Choice {
 
 pub struct Player {
     strategy: StrategySignature,
-    pub name: String,
+    pub name: &'static str,
 }
 
 impl Player {
-    pub fn new(strategy: StrategySignature, name: String) -> Self {
+    pub fn new(strategy: StrategySignature, name: &'static str) -> Self {
         Self { strategy, name }
     }
 

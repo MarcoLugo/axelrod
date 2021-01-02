@@ -20,7 +20,7 @@ pub struct Tournament {
 impl Tournament {
     #[requires(configs.len() % 2 == 0)]
     #[requires(n_iterations > 0)]
-    pub fn new(configs: Vec<(String, StrategySignature)>, n_iterations: u64) -> Self {
+    pub fn new(configs: Vec<(&'static str, StrategySignature)>, n_iterations: u64) -> Self {
         let n_players = configs.len();
 
         let mut tournament = Self {
