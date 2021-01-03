@@ -81,31 +81,8 @@ impl Tournament {
     }
 
     pub fn show_scores(&mut self) {
-        println!("[+] Round-robin scores:");
-
-        for pairing in &self.pairings {
-            let (choices_a, choices_b) = self.history.get(pairing).unwrap();
-            let (score_a, score_b) = Tournament::compute_pairing_scores(choices_a, choices_b);
-
-            self.scores[pairing.0] += score_a;
-            self.scores[pairing.1] += score_b;
-
-            println!(
-                "Match: {} ({}) vs {} ({}) -> ({}, {})",
-                pairing.0,
-                self.players[pairing.0].name,
-                pairing.1,
-                self.players[pairing.1].name,
-                score_a,
-                score_b
-            );
-        }
-
-        println!("[+] Total scores:");
-
-        for (i, score) in self.scores.iter().enumerate() {
-            println!("{} ({}): {} points.", i, self.players[i].name, score);
-        }
+        self.show_pairing_scores();
+        self.show_total_scores();
     }
 
     fn compute_payoffs(choice_a: &Choice, choice_b: &Choice) -> (i32, i32) {
@@ -126,6 +103,54 @@ impl Tournament {
                 let (result_a, result_b) = Tournament::compute_payoffs(a, b);
                 (acc_a + result_a, acc_b + result_b)
             })
+    }
+
+    fn show_pairing_scores(&mut self) {
+        println!("\n[+] Round-robin scores:");
+        println!(
+            "{0:>4} | {1:>25} | {2:>7} | {3:<7} | {4:<25} | {5:<4}",
+            "Id 1", "Player 1", "Score 1", "Score 2", "Player 2", "Id 2"
+        );
+
+        for pairing in &self.pairings {
+            let (choices_a, choices_b) = self.history.get(pairing).unwrap();
+            let (score_a, score_b) = Tournament::compute_pairing_scores(choices_a, choices_b);
+
+            self.scores[pairing.0] += score_a;
+            self.scores[pairing.1] += score_b;
+            let name_a = self.players[pairing.0].name;
+            let name_b = self.players[pairing.1].name;
+
+            println!(
+                "{:>4} | {:>25} | {:>7} | {:<7} | {:<25} | {:<4}",
+                pairing.0, name_a, score_a, score_b, name_b, pairing.1
+            );
+        }
+    }
+
+    fn show_total_scores(&self) {
+        println!("\n[+] Ranked total scores:");
+        println!(
+            "{0:>5} | {1:>25} | {2:>10} | {3:>10}",
+            "id", "name", "total", "average"
+        );
+
+        let mut player_indices_sorted_by_score: Vec<(_, _)> = self
+            .scores
+            .iter()
+            .enumerate()
+            .map(|(i, &s)| (i, s))
+            .collect();
+        player_indices_sorted_by_score.sort_by(|a, b| b.1.cmp(&a.1));
+
+        for (i, score) in player_indices_sorted_by_score {
+            let name = self.players[i].name;
+            let average_score = score as f64 / self.n_iterations as f64;
+            println!(
+                "{:>5} | {:>25} | {:>10} | {:>10}",
+                i, name, score, average_score
+            );
+        }
     }
 }
 

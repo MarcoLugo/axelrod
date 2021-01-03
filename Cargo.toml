@@ -1,0 +1,12 @@
+[package]
+name = "axelrod"
+version = "0.1.0"
+authors = ["Marco Lugo"]
+edition = "2018"
+
+[dependencies]
+itertools = "0.10.0"
+contracts = "0.6.0"
+indicatif = "0.15.0"
+fnv = "1.0.7"
+fastrand = "1.4.0"

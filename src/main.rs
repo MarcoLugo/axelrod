@@ -14,7 +14,7 @@ fn main() {
         ("RandomCoinFlip", Box::new(strategies::random_coin_flip)),
     ];
 
-    let mut tournament = Tournament::new(configs, 1000);
+    let mut tournament = Tournament::new(configs, 100);
     tournament.run();
     tournament.show_scores();
 }
